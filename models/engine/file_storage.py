@@ -1,9 +1,3 @@
-#!/usr/bin/python3
-"""
-FileStorage module: Provides a JSON-based file storage mechanism for your
-Python objects.
-"""
-
 import json
 import sys
 
@@ -21,14 +15,40 @@ class FileStorage:
     __file_path = "file.json"
     __objects = {}
 
-    def all(self):
+    def all(self, cls=None):
         """
-        Retrieves all objects stored in the file storage.
+        Retrieves all objects stored in the file storage, optionally filtered
+        by class.
+
+        Args:
+            cls (class, optional): The class of objects to retrieve.
+                If None, all objects are returned. Defaults to None.
 
         Returns:
-            dict: A dictionary containing all stored objects.
+            list: A list of objects of the specified class or all objects if
+            cls
+            is None.
         """
-        return self.__objects
+        if cls is not None and not issubclass(cls, object):
+            raise TypeError("cls must be a class")
+        return [obj for obj in self.__objects.values() if isinstance(obj, cls)]
+
+    def delete(self, obj=None):
+        """
+        Deletes an object from the file storage, if provided.
+
+        Args:
+            obj (object, optional): The object to be deleted. If None,
+                no deletion occurs. Defaults to None.
+        """
+        if obj is None:
+            return
+        key = '{}.{}'.format(type(obj).__name__, obj.id)
+        if key in self.__objects:
+            del self.__objects[key]
+            self.save()
+        else:
+            print(f"Object with key '{key}' not found in storage.")
 
     def new(self, obj):
         """
@@ -36,7 +56,7 @@ class FileStorage:
 
         Args:
             obj: The object to be added to the storage. The object's class name
-        and id are combined to create a unique key.
+                and id are combined to create a unique key.
         """
         object_key = f"{obj.__class__.__name__}.{obj.id}"
         self.__objects[object_key] = obj
@@ -49,13 +69,11 @@ class FileStorage:
         This method performs the following steps:
 
         1. **Serialization:**  Converts each object in `__objects`
-        into a dictionary
-        representation using the `to_dict()` method (assumed to be
-        implemented in the classes of the objects being stored).
+        into a dictionary representation using the `to_dict()` method
+        (assumed to be implemented in the classes of the objects being stored).
 
         2. **Store Class Name:** Includes the class name (`__class__`)
-        in the serialized
-        dictionary to enable proper deserialization later.
+        in the serialized dictionary to enable proper deserialization later.
 
         3. **File Writing:** Writes the serialized dictionary to the
         JSON file, providing persistent storage.
@@ -77,21 +95,21 @@ class FileStorage:
 
         1. **Safe Class Handling:**
             * Leverages `getattr` and `sys.modules` to dynamically import
-             classes by their names from the class definitions present
-            in the code.This protects against arbitrary code execution
-            risks associated with direct use of `eval`.
+              classes by their names from the class definitions present
+              in the code. This protects against arbitrary code execution
+              risks associated with direct use of `eval`.
 
         2. **Error Handling:**
             * Gracefully handles missing files (`FileNotFoundError`),
-            simply continuing without modifying the storage.
+              simply continuing without modifying the storage.
             * Warns the user if an object's class cannot be found
-            during deserialization, allowing the loading process to
-             ontinue while skipping the affected object.
+              during deserialization, allowing the loading process to
+              continue while skipping the affected object.
 
         3. **Deserialization and Instantiation:**
             * Creates instances of the stored objects using their
-            serialized data, ensuring
-              the original object state is restored from the storage file.
+              serialized data, ensuring the original object state is
+              restored from the storage file.
         """
         try:
             with open(self.__file_path, "r", encoding="UTF8") as file:
@@ -107,4 +125,4 @@ class FileStorage:
                 else:
                     print(f"Warning: Skipping object with key '{object_key}'")
         except FileNotFoundError:
-            pass  # Nothing to load if the file doesn't exists
+            pass
