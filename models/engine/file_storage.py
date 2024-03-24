@@ -1,128 +1,80 @@
+#!/usr/bin/python3
+"""This is the file storage class for AirBnB"""
 import json
-import sys
+from models.base_model import BaseModel
+from models.user import User
+from models.state import State
+from models.city import City
+from models.amenity import Amenity
+from models.place import Place
+from models.review import Review
+import shlex
 
 
 class FileStorage:
-    """
-    A class for handling file storage of objects in JSON format.
-
+    """This class serializes instances to a JSON file and
+    deserializes JSON file to instances
     Attributes:
-        __file_path (str): The path to the JSON file where objects are stored.
-        __objects (dict): An in-memory dictionary to hold the deserialized
-        objects.
+        __file_path: path to the JSON file
+        __objects: objects will be stored
     """
-
     __file_path = "file.json"
     __objects = {}
 
     def all(self, cls=None):
+        """returns a dictionary
+        Return:
+            returns a dictionary of __object
         """
-        Retrieves all objects stored in the file storage, optionally filtered
-        by class.
-
-        Args:
-            cls (class, optional): The class of objects to retrieve.
-                If None, all objects are returned. Defaults to None.
-
-        Returns:
-            list: A list of objects of the specified class or all objects if
-            cls
-            is None.
-        """
-        if cls is not None and not issubclass(cls, object):
-            raise TypeError("cls must be a class")
-        return [obj for obj in self.__objects.values() if isinstance(obj, cls)]
-
-    def delete(self, obj=None):
-        """
-        Deletes an object from the file storage, if provided.
-
-        Args:
-            obj (object, optional): The object to be deleted. If None,
-                no deletion occurs. Defaults to None.
-        """
-        if obj is None:
-            return
-        key = '{}.{}'.format(type(obj).__name__, obj.id)
-        if key in self.__objects:
-            del self.__objects[key]
-            self.save()
+        dic = {}
+        if cls:
+            dictionary = self.__objects
+            for key in dictionary:
+                partition = key.replace('.', ' ')
+                partition = shlex.split(partition)
+                if (partition[0] == cls.__name__):
+                    dic[key] = self.__objects[key]
+            return (dic)
         else:
-            print(f"Object with key '{key}' not found in storage.")
+            return self.__objects
 
     def new(self, obj):
-        """
-        Adds a new object to the file storage.
-
+        """sets __object to given obj
         Args:
-            obj: The object to be added to the storage. The object's class name
-                and id are combined to create a unique key.
+            obj: given object
         """
-        object_key = f"{obj.__class__.__name__}.{obj.id}"
-        self.__objects[object_key] = obj
+        if obj:
+            key = "{}.{}".format(type(obj).__name__, obj.id)
+            self.__objects[key] = obj
 
     def save(self):
+        """serialize the file path to JSON file path
         """
-        Saves all objects in the `__objects` dictionary
-        to the specified JSON file.
-
-        This method performs the following steps:
-
-        1. **Serialization:**  Converts each object in `__objects`
-        into a dictionary representation using the `to_dict()` method
-        (assumed to be implemented in the classes of the objects being stored).
-
-        2. **Store Class Name:** Includes the class name (`__class__`)
-        in the serialized dictionary to enable proper deserialization later.
-
-        3. **File Writing:** Writes the serialized dictionary to the
-        JSON file, providing persistent storage.
-        """
-        serialized_objects = {}
-
-        for object_key, obj in self.__objects.items():
-            serialized_objects[object_key] = obj.to_dict()
-
-        with open(self.__file_path, "w") as file:
-            json.dump(serialized_objects, file)
+        my_dict = {}
+        for key, value in self.__objects.items():
+            my_dict[key] = value.to_dict()
+        with open(self.__file_path, 'w', encoding="UTF-8") as f:
+            json.dump(my_dict, f)
 
     def reload(self):
-        """
-        Loads objects from the JSON file and populates the `__objects`
-        dictionary.
-
-        This method takes care of the following aspects:
-
-        1. **Safe Class Handling:**
-            * Leverages `getattr` and `sys.modules` to dynamically import
-              classes by their names from the class definitions present
-              in the code. This protects against arbitrary code execution
-              risks associated with direct use of `eval`.
-
-        2. **Error Handling:**
-            * Gracefully handles missing files (`FileNotFoundError`),
-              simply continuing without modifying the storage.
-            * Warns the user if an object's class cannot be found
-              during deserialization, allowing the loading process to
-              continue while skipping the affected object.
-
-        3. **Deserialization and Instantiation:**
-            * Creates instances of the stored objects using their
-              serialized data, ensuring the original object state is
-              restored from the storage file.
+        """serialize the file path to JSON file path
         """
         try:
-            with open(self.__file_path, "r", encoding="UTF8") as file:
-                serialized_data = json.load(file)
-
-            for object_key, serialized_obj in serialized_data.items():
-                class_name = serialized_obj.get("__class__")
-                if class_name and hasattr(sys.modules, class_name):
-                    module = sys.modules[class_name]
-                    obj_class = getattr(module, class_name)
-                    obj_instance = obj_class(**serialized_obj)
-                    self.__objects[object_key] = obj_instance
-                else:
-                    print(f"Warning: Skipping object with key '{object_key}'")
+            with open(self.__file_path, 'r', encoding="UTF-8") as f:
+                for key, value in (json.load(f)).items():
+                    value = eval(value["__class__"])(**value)
+                    self.__objects[key] = value
         except FileNotFoundError:
             pass
+
+    def delete(self, obj=None):
+        """ delete an existing element
+        """
+        if obj:
+            key = "{}.{}".format(type(obj).__name__, obj.id)
+            del self.__objects[key]
+
+    def close(self):
+        """ calls reload()
+        """
+        self.reload()
