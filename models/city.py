@@ -9,14 +9,20 @@ Attributes:
     name (str): Name of the city.
 """
 
-from models.base_model import BaseModel
+from models.base_model import BaseModel, Base
+from sqlalchemy import Column, String, ForeignKey
 
 
-class City(BaseModel):
-    """City class that inherits from BaseModel"""
+class City(BaseModel, Base):
+    """
+    Represents a City for the AirBnB clone project.
 
-    def __init__(self, *args, **kwargs):
-        """Initialize City class"""
-        super().__init__(*args, **kwargs)
-        self.state_id = ""
-        self.name = ""
+    Attributes:
+        __tablename__ (str): Name of the table in the database.
+        name (str): Name of the city.
+        state_id (str): ID of the state the city is located in.
+    """
+
+    __tablename__ = 'cities'
+    name = Column(String(128), nullable=False)
+    state_id = Column(String(60), ForeignKey('states.id'), nullable=False)
