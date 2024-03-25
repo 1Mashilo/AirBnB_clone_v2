@@ -1,26 +1,18 @@
 #!/usr/bin/python3
+"""This is the review class"""
+from sqlalchemy.ext.declarative import declarative_base
+from models.base_model import BaseModel, Base
+from sqlalchemy import Column, Integer, String, ForeignKey, Float
 
 
-"""
-This module defines the Review class, representing a user-submitted
-review associated with a rental property.
-The Review class inherits from the BaseModel class
-
-Attributes:
-    place_id (str): ID of the Place the review is for.
-    user_id (str): ID of the user who wrote the review.
-    text (str): The content of the review.
-"""
-
-from models.base_model import BaseModel
-
-
-class Review(BaseModel):
-    """Review class that inherits from BaseModel"""
-
-    def __init__(self, *args, **kwargs):
-        """Initialize Review class"""
-        super().__init__(*args, **kwargs)
-        self.place_id = ""
-        self.user_id = ""
-        self.text = ""
+class Review(BaseModel, Base):
+    """This is the class for Review
+    Attributes:
+        place_id: place id
+        user_id: user id
+        text: review description
+    """
+    __tablename__ = "reviews"
+    text = Column(String(1024), nullable=False)
+    place_id = Column(String(60), ForeignKey("places.id"), nullable=False)
+    user_id = Column(String(60), ForeignKey("users.id"), nullable=False)
